@@ -61,7 +61,7 @@ export default class Model {
     })
   }
 
-  mount (Com, props:({[key:string]:string}|string[]) = []) {
+  mount (Com, props:({[key:string]:string}|string[]) = []):typeof React.PureComponent {
     const that = this
     const item = { component: Com, props: props, changeProps: [] }
     this.mounts.push(item)

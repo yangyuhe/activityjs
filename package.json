@@ -2,7 +2,8 @@
   "name": "activityjs",
   "version": "1.0.0",
   "description": "一种相比于redux更简单的状态管理方式",
-  "main": "index.js",
+  "main": "dist/index.main.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack && tsc",
