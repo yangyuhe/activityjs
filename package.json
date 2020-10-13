@@ -2,7 +2,7 @@
   "name": "activityjs",
   "version": "1.0.1",
   "description": "一种相比于redux更简单的状态管理方式",
-  "main": "dist/index.main.js",
+  "main": "dist/index.min.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
