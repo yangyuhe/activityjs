@@ -30,3 +30,12 @@ let WLogin=page.mount(Login,["user","login"])
 
 ReactDom.reander(<WLogin/>,document.getElementById("app"))
 ```
+### API
+```typescript
+mount(Component,props:string[]|{[name:string]:string})
+```
+将activity中的数据或者方法作为属性传递给React组件（可以是函数组件或者类组件）。props还可以是一个映射，用来重命名属性，key值是activity中的属性或者方法名，value是要被映射成属性名。
+```typescript
+mount(Component,subActivity:string,props:string[]|{[name:string]:string})
+```
+用于进行子activity的属性和方法的绑定
