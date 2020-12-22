@@ -17,13 +17,6 @@ export default class Activity {
   private _getProps(props: string[]) {
     const _props = {};
     props.forEach((p) => {
-      if (
-        typeof this[p] === "function" &&
-        Object.hasOwnProperty.call(this[p], "prototype") &&
-        this.isProtoFunc(p)
-      ) {
-        this[p] = this[p].bind(this);
-      }
       _props[p] = this[p];
     });
     return _props;
@@ -33,9 +26,9 @@ export default class Activity {
       return this._getProps(props);
     } else {
       const _props = {};
-      let res = this._getProps(Object.keys(props));
-      Object.keys(res).forEach((prop) => {
-        _props[props[prop]] = res[prop];
+      let res = this._getProps(Object.values(props));
+      Object.keys(props).forEach((name) => {
+        _props[name] = res[props[name]];
       });
       return _props;
     }
@@ -44,7 +37,10 @@ export default class Activity {
   private proxyProps(props: string[]) {
     props.forEach((prop) => {
       const descriptor = Object.getOwnPropertyDescriptor(this, prop);
-      if (this.isProtoFunc(prop) || (descriptor && !descriptor.configurable)) {
+      if (
+        !this.hasOwnProperty(prop) ||
+        (descriptor && !descriptor.configurable)
+      ) {
         return;
       }
       let value = this[prop];
@@ -53,54 +49,78 @@ export default class Activity {
           return value;
         },
         set: (val) => {
-          value = val;
-          this.update();
+          if (value !== val) {
+            value = val;
+            this.update();
+          }
         },
         configurable: false,
       });
     });
   }
-  mountDynamic(
+  connectDynamic(
     Com,
-    depth: string,
+    path: string,
     props: { [key: string]: string } | string[] = []
   ) {
-    let depths = depth.split(".");
-    let prop = depths.shift();
-    class Wrapper extends React.PureComponent<{
-      $activity: Activity;
-      $deps: string[];
-    }> {
+    if (!path) {
+      return this.connect(Com, props);
+    }
+
+    let instances = [];
+    watch(this, path, (oldVal, newVal) => {
+      if (newVal && newVal.connect) {
+        instances.forEach((item) => {
+          item.setState({
+            Com: newVal.connect(Com, props),
+          });
+        });
+      } else {
+        instances.forEach((item) => {
+          item.setState({
+            Com: null,
+          });
+        });
+      }
+    });
+    class Wrapper extends React.PureComponent<{}, { Com: any }> {
+      constructor(props) {
+        super(props);
+        let activity = evalExp(this, path);
+        this.state = {
+          Com:
+            activity && activity.connect ? activity.connect(Com, props) : null,
+        };
+      }
+      componentDidMount() {
+        instances.push(this);
+      }
+      componentWillMount() {
+        instances = instances.filter((item) => item !== this);
+      }
       render() {
-        let $activity = this.props.$activity;
-        let $deps: string[];
-        if (this.props.$deps) $deps = this.props.$deps;
-        else $deps = depths.slice(0);
-        if ($activity) {
-          let Inner;
-          if ($deps.length == 0) {
-            Inner = $activity.mount(Com, props);
-          } else {
-            let prop = $deps.shift();
-            Inner = $activity.mount(Wrapper, { [prop]: "$activity" });
-          }
-          let newProps: any = Object.assign({}, this.props);
-          delete newProps.$activity;
-          return <Inner {...newProps} $deps={$deps.slice(0)} />;
+        if (this.state.Com) {
+          let Com = this.state.Com;
+          return <Com {...this.props} />;
         }
         return null;
       }
     }
-    return this.mount(Wrapper, { [prop]: "$activity" });
+    return Wrapper;
   }
-  mount(
+  /**
+   * 将数据分发给组件
+   * @param Com react组件构造器，函数或者类组件
+   * @param props 可以是数组或者映射(用于重命名属性名)，当是映射的时候格式是{新属性名:旧属性名,...}
+   */
+  connect(
     Com,
     props: { [key: string]: string } | string[] = []
   ): typeof React.PureComponent {
     const that = this;
     const item = { component: Com, props: props, changeProps: [] };
     this.mounts.push(item);
-    this.proxyProps(props instanceof Array ? props : Object.keys(props));
+    this.proxyProps(props instanceof Array ? props : Object.values(props));
     return class Activity extends React.PureComponent {
       _setstate: Function = null;
       constructor(p) {
@@ -122,15 +142,55 @@ export default class Activity {
       }
     };
   }
-
-  private isProtoFunc(funcName) {
-    let proto = Object.getPrototypeOf(this);
-    while (proto) {
-      if (proto[funcName]) {
-        return true;
-      }
-      proto = Object.getPrototypeOf(proto);
+}
+function watch(v, path, cb) {
+  if (path === "" || !v) return;
+  let routers = path.split(".");
+  let top = routers.shift();
+  if (v && typeof v === "object") {
+    if (!v["__$" + top]) {
+      v["__$" + top] = [];
     }
-    return false;
+    let cbs = v["__$" + top];
+    let leftPath = routers.join(".");
+    if (!cbs.find((item) => item.path === leftPath && item.fn === cb))
+      cbs.push({ path: leftPath, fn: cb });
+    let prop = Object.getOwnPropertyDescriptor(v, top);
+    let value = v[top];
+    if (!prop || prop.configurable) {
+      Object.defineProperty(v, top, {
+        configurable: false,
+        get() {
+          return value;
+        },
+        set: (val) => {
+          if (val !== value) {
+            cbs.forEach((item) => {
+              if (item.path === "") item.fn(value, val);
+              else {
+                let old = evalExp(value, item.path);
+                let newval = evalExp(val, item.path);
+                if (old !== newval) {
+                  item.fn(old, newval);
+                }
+              }
+            });
+            value = val;
+            cbs.forEach((item) => {
+              watch(value, item.path, item.fn);
+            });
+          }
+        },
+      });
+    }
+    watch(value, leftPath, cb);
+  }
+}
+function evalExp(v, expr) {
+  let f = new Function("obj", "return obj." + expr);
+  try {
+    return f(v);
+  } catch (err) {
+    return null;
   }
 }

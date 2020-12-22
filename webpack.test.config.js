@@ -1,6 +1,6 @@
 const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
-module.exports = function (env) {
+module.exports = function () {
   return {
     mode: 'development',
     devtool: 'source-map',
@@ -13,16 +13,17 @@ module.exports = function (env) {
     module: {
       rules: [{
         test: /\.(js|tsx)$/,
-        loader: 'babel-loader',
-        options: {
-          presets: ['@babel/preset-env', '@babel/preset-react', '@babel/preset-typescript']
-        }
+        loader: 'babel-loader'
       }]
+    },
+    resolve: {
+      extensions: ['.js', '.jsx', '.ts', '.tsx']
     },
     devServer: {
       compress: true,
       port: 9000,
-      contentBase: 'dist'
+      contentBase: 'dist',
+      open: true
     },
     plugins: [new HtmlWebpackPlugin({ template: 'test/index.html' })]
   }

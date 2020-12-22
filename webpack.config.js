@@ -1,5 +1,5 @@
 const path = require('path')
-module.exports = function (env) {
+module.exports = function () {
   function config (dev) {
     return {
       mode: dev ? 'development' : 'production',
@@ -13,11 +13,7 @@ module.exports = function (env) {
       module: {
         rules: [{
           test: /\.(js|tsx)$/,
-          loader: 'babel-loader',
-          options: {
-            presets: ['@babel/preset-typescript', '@babel/preset-env', '@babel/preset-react'],
-            plugins: ['transform-class-properties']
-          }
+          loader: 'babel-loader'
         }]
       },
       externals: {
