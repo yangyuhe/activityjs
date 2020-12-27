@@ -1,10 +1,9 @@
 /* eslint-disable react/prop-types */
 import React, { useEffect, useState } from "react";
-import Activity from "../src/index";
+import { connect, connectMulti } from "../src/index";
 import ReactDom from "react-dom";
-class Model extends Activity {
+class Model {
   constructor(id) {
-    super();
     this.id = id;
     this.age = 0;
     this.submodel = null;
@@ -23,24 +22,48 @@ class Model extends Activity {
 const model = new Model("init");
 
 window.__model = model;
-const FirstLevelCounter = model.connect(Counter, {
-  myage: "age",
-  myadd: "add",
-});
-const SecondLevelCounter = model.connectDynamic(Counter, "submodel", {
-  myage: "age",
-  myadd: "add",
-});
-const ThirdLevelCounter = model.connectDynamic(Counter, "submodel.submodel", {
-  myage: "age",
-  myadd: "add",
-  id: "id",
-});
-const FourLevelCounter = model.connectDynamic(Counter, "submodel.submodel", {
-  myage: "age",
-  myadd: "add",
-  id: "id",
-});
+const FirstLevelCounter = connect(
+  [
+    model,
+    {
+      myage: "age",
+      myadd: "add",
+    },
+  ],
+  Counter
+);
+const SecondLevelCounter = connect(
+  [
+    [model, "submodel"],
+    {
+      myage: "age",
+      myadd: "add",
+    },
+  ],
+  Counter
+);
+const ThirdLevelCounter = connect(
+  [
+    [model, "submodel.submodel"],
+    {
+      myage: "age",
+      myadd: "add",
+      id: "id",
+    },
+  ],
+  Counter
+);
+const FourLevelCounter = connect(
+  [
+    [model, "submodel.submodel"],
+    {
+      myage: "age",
+      myadd: "add",
+      id: "id",
+    },
+  ],
+  Counter
+);
 
 function Counter(props) {
   useEffect(() => {
@@ -58,6 +81,44 @@ function Counter(props) {
     </>
   );
 }
+class Model1 {
+  constructor() {
+    this.time = new Date().toLocaleString();
+    this.timmer = setInterval(() => {
+      this.time = new Date().toLocaleString();
+    }, 1000);
+  }
+}
+let model1 = new Model1();
+class Model2 {
+  constructor() {
+    this.time = new Date().toISOString();
+    this.timmer = setInterval(() => {
+      this.time = new Date().toISOString();
+    }, 1000);
+  }
+}
+let model2 = new Model2();
+function Clock(props) {
+  return (
+    <div>
+      <h1>美国:{props.american}</h1>
+      <h1>中国:{props.china}</h1>
+      <h2>
+        secondModel:{props.secondModel},id:{props.id}
+      </h2>
+    </div>
+  );
+}
+const WrapClock = connectMulti(
+  [
+    [model1, { american: "time" }],
+    [model2, { china: "time" }],
+    [[model, "submodel.submodel"], { secondModel: "age" }, "id"],
+  ],
+  Clock
+);
+
 function App() {
   const [count, setCount] = useState(0);
   const test = () => {
@@ -65,11 +126,14 @@ function App() {
   };
   return (
     <>
+      <h1>测试动态绑定</h1>
       <FirstLevelCounter />
       <SecondLevelCounter title="second" />
       <ThirdLevelCounter count={count} title="third" />
       <ThirdLevelCounter count={count} title="fourth" />
       <button onClick={test}>good</button>
+      <h1>测试绑定多个model</h1>
+      <WrapClock />
     </>
   );
 }
