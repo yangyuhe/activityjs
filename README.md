@@ -1,4 +1,4 @@
-# 一种新的状态管理方案，用于替代 redux
+# 一种新的状态管理方案，可以将普通对象的属性/方法作为属性绑定到指定的组件上，并获得同步的更新
 
 ```javascript
 import { connect } from "activityjs";
@@ -8,12 +8,12 @@ class Page {
   constructor() {
     this.user = null;
   }
-  login() {
+  login = () => {
     mockRequest().then(() => {
-      //关联的react组件会自动得到更新
+      //关联的react组件会自动得到同步更新
       this.user = { name: "foo" };
     });
-  }
+  };
 }
 let page = new Page();
 
@@ -28,7 +28,7 @@ function Login(props) {
     </>
   );
 }
-//将page的user,login属性映射到组件Login中，也支持map参数
+//将page的user,login属性/方法给组件Login
 let WLogin = connect([page, "user", "login"], Login);
 
 ReactDom.reander(<WLogin />, document.getElementById("app"));
@@ -143,3 +143,7 @@ const WrapCom = connectMulti([
 //使用
 <WrapCom />
 ```
+
+### 注意
+
+如果想将 model 中一个方法提供给组件，注意该方法需要用 this 绑定或者使用 es6 中的箭头函数；多数情况下可能不用映射一个方法，而是直接调用 model 的这个方法。
