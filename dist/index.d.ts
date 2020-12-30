@@ -1,10 +1,9 @@
-import React from "react";
 /**
  * 连接多个model
  * @param models 是connect方法的第一个参数的数组
  * @param Com 组件
  */
-export declare function connectMulti(modelUses: any[], Com: React.ComponentType): React.ComponentType<{}>;
+export declare function connectMulti(modelUses: any[], Com: any): any;
 /**
  *
  * @param modelUse
@@ -17,4 +16,4 @@ export declare function connectMulti(modelUses: any[], Com: React.ComponentType)
  * 4.使用model A里的model B的foo属性,[[A,"B"],"foo"]
  * @param Com 组件
  */
-export declare function connect(modelUse: any[], Com: React.ComponentType): React.ComponentClass;
+export declare function connect(modelUse: any[], Com: any): any;
