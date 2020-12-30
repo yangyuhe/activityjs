@@ -5,7 +5,7 @@ import React from "react";
  * @param models 是connect方法的第一个参数的数组
  * @param Com 组件
  */
-export function connectMulti(modelUses: any[], Com: React.ComponentType) {
+export function connectMulti(modelUses: any[], Com: any) {
   let newCom = Com;
   modelUses.forEach((modelUse) => {
     newCom = connect(modelUse, newCom);
@@ -24,10 +24,7 @@ export function connectMulti(modelUses: any[], Com: React.ComponentType) {
  * 4.使用model A里的model B的foo属性,[[A,"B"],"foo"]
  * @param Com 组件
  */
-export function connect(
-  modelUse: any[],
-  Com: React.ComponentType
-): React.ComponentClass {
+export function connect(modelUse: any[], Com: any): any {
   if (!modelUse || !Array.isArray(modelUse) || modelUse.length < 2)
     throw new Error("connect:modelUse must be array with more than 1 element");
   if (!(modelUse[0] instanceof Object)) {
