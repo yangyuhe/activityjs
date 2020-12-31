@@ -6,15 +6,14 @@ class Model {
   constructor(id) {
     this.id = id;
     this.age = 0;
-    this.submodel = null;
+    if (id === "init" || id === "second")
+      this.submodel = new Model(this.id === "init" ? "second" : "third");
   }
 
   add = () => {
     this.age++;
     if (this.age % 5 === 0) {
-      this.submodel = this.submodel
-        ? null
-        : new Model(this.id === "init" ? "second" : "third");
+      this.submodel = new Model(this.id === "init" ? "second" : "third");
     }
   };
 }

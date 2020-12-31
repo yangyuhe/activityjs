@@ -292,12 +292,12 @@ function connectDynamic(modelUse, Com) {
 
     var _super2 = _createSuper(Wrapper);
 
-    function Wrapper(props) {
+    function Wrapper(_props) {
       var _this3;
 
       _classCallCheck(this, Wrapper);
 
-      _this3 = _super2.call(this, props);
+      _this3 = _super2.call(this, _props);
       var activity = evalExp(model, path);
       _this3.state = {
         Com: activity ? connect([activity, props], Com) : null

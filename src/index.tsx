@@ -96,8 +96,8 @@ function connectDynamic(modelUse: any[], Com: React.ComponentType) {
     }
   });
   class Wrapper extends React.PureComponent<{}, { Com: any }> {
-    constructor(props) {
-      super(props);
+    constructor(_props) {
+      super(_props);
       let activity = evalExp(model, path);
       this.state = {
         Com: activity ? connect([activity, props], Com) : null,
