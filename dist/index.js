@@ -311,8 +311,8 @@ function connectDynamic(modelUse, Com) {
         instances.push(this);
       }
     }, {
-      key: "componentWillMount",
-      value: function componentWillMount() {
+      key: "componentWillUnmount",
+      value: function componentWillUnmount() {
         var _this4 = this;
 
         instances = instances.filter(function (item) {
