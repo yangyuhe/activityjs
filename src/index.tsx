@@ -106,7 +106,7 @@ function connectDynamic(modelUse: any[], Com: React.ComponentType) {
     componentDidMount() {
       instances.push(this);
     }
-    componentWillMount() {
+    componentWillUnmount() {
       instances = instances.filter((item) => item !== this);
     }
     render() {
