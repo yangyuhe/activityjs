@@ -12,6 +12,26 @@ export function connectMulti(modelUses: any[], Com: any) {
   });
   return newCom;
 }
+
+export function connect(modelUse: any[], Com: any) {
+  if (!Array.isArray(modelUse[0])) {
+    let props = format(modelUse[0], modelUse.slice(1))[1];
+    Object.keys(props).forEach((name) => {
+      let exp = props[name];
+      exp = exp.split(".")[0];
+      watch(modelUse[0], exp, modelUse[0]);
+    });
+  } else {
+    let prefix = modelUse[0][1];
+    let props = format(modelUse[0][0], modelUse.slice(1))[1];
+    Object.keys(props).forEach((name) => {
+      let exp = props[name];
+      exp = exp.split(".")[0];
+      watch(modelUse[0][0], prefix + "." + exp, modelUse[0][0]);
+    });
+  }
+  return realConnect(modelUse, Com);
+}
 /**
  *
  * @param modelUse
@@ -24,7 +44,7 @@ export function connectMulti(modelUses: any[], Com: any) {
  * 4.使用model A里的model B的foo属性,[[A,"B"],"foo"]
  * @param Com 组件
  */
-export function connect(modelUse: any[], Com: any): any {
+export function realConnect(modelUse: any[], Com: any): any {
   if (!modelUse || !Array.isArray(modelUse) || modelUse.length < 2)
     throw new Error("connect:modelUse must be array with more than 1 element");
   if (!(modelUse[0] instanceof Object)) {
@@ -35,31 +55,54 @@ export function connect(modelUse: any[], Com: any): any {
   }
   if (!Array.isArray(modelUse[0])) {
     let [model, props] = format(modelUse[0], modelUse.slice(1));
-    const item = { component: Com, props: props, changeProps: [] };
-    if (!model.__$mounts) {
-      Object.defineProperty(model, "__$mounts", {
-        enumerable: false,
+    let setStateFns = [];
+    let des = Object.getOwnPropertyDescriptor(model, ProxyKey);
+    if (!des) {
+      Object.defineProperty(model, ProxyKey, {
         value: [],
         configurable: false,
+        enumerable: false,
       });
     }
-    let mounts = (model as any).__$mounts;
-    mounts.push(item);
-    proxyProps(model, Object.values(props));
+    if (model[ProxyKey]) {
+      let oldState = {};
+      Object.keys(props).forEach((name) => {
+        let exp = props[name];
+        let old = evalExp(model, exp);
+        oldState[name] = old;
+      });
+      model[ProxyKey].push(() => {
+        let newState = {};
+        Object.keys(props).forEach((name) => {
+          let exp = props[name];
+          let newV = evalExp(model, exp);
+          if (newV !== oldState[name]) {
+            newState[name] = newV;
+          }
+        });
+        if (Object.keys(newState).length > 0) {
+          setStateFns.forEach((fn) => {
+            fn(newState);
+          });
+        }
+        Object.assign(oldState, newState);
+      });
+    }
     return class Activity extends React.PureComponent {
       _setstate: Function = null;
       constructor(p) {
         super(p);
-        const _props = getProps(model, props);
+        const _props = {};
+        Object.keys(props).forEach((key) => {
+          _props[key] = evalExp(model, props[key]);
+        });
         this.state = _props;
         this._setstate = this.setState.bind(this);
-        item.changeProps.push(this._setstate);
+        setStateFns.push(this._setstate);
       }
 
       componentWillUnmount() {
-        item.changeProps = item.changeProps.filter(
-          (item) => item !== this._setstate
-        );
+        setStateFns = setStateFns.filter((item) => item !== this._setstate);
       }
 
       render() {
@@ -70,37 +113,54 @@ export function connect(modelUse: any[], Com: any): any {
     return connectDynamic(modelUse, Com);
   }
 }
-
+const DynamicKey = "__$lego_dynamic";
 function connectDynamic(modelUse: any[], Com: React.ComponentType) {
   let path = modelUse[0][1];
   if (!path) {
-    return connect([modelUse[0][0], ...modelUse.slice(1)], Com);
+    return realConnect([modelUse[0][0], ...modelUse.slice(1)], Com);
   }
 
   let [model, props] = format(modelUse[0][0], modelUse.slice(1));
 
   let instances = [];
-  watch(model, path, (oldVal, newVal) => {
-    if (newVal) {
-      instances.forEach((item) => {
-        item.setState({
-          Com: connect([newVal, props], Com),
-        });
-      });
-    } else {
-      instances.forEach((item) => {
-        item.setState({
-          Com: null,
-        });
+
+  if (model && typeof model === "object") {
+    let des = Object.getOwnPropertyDescriptor(model, DynamicKey);
+    if (!des) {
+      Object.defineProperty(model, DynamicKey, {
+        value: [],
+        configurable: false,
+        enumerable: false,
       });
     }
-  });
+    let callbacks = model[DynamicKey];
+    let old = evalExp(model, path);
+    callbacks.push(() => {
+      let newval = evalExp(model, path);
+      if (old !== newval) {
+        if (newval) {
+          instances.forEach((item) => {
+            item.setState({
+              Com: realConnect([newval, props], Com),
+            });
+          });
+        } else {
+          instances.forEach((item) => {
+            item.setState({
+              Com: null,
+            });
+          });
+        }
+        old = newval;
+      }
+    });
+  }
   class Wrapper extends React.PureComponent<{}, { Com: any }> {
     constructor(_props) {
       super(_props);
       let activity = evalExp(model, path);
       this.state = {
-        Com: activity ? connect([activity, props], Com) : null,
+        Com: activity ? realConnect([activity, props], Com) : null,
       };
     }
     componentDidMount() {
@@ -163,93 +223,57 @@ function format(model: any, props: any[]) {
 
   return [model, newProps];
 }
+const ProxyKey = "__$lego_proxyProps";
 
-function proxyProps(model: any, props: string[]) {
-  props.forEach((prop) => {
-    const descriptor = Object.getOwnPropertyDescriptor(model, prop);
-    if (
-      !model.hasOwnProperty(prop) ||
-      (descriptor && !descriptor.configurable)
-    ) {
-      return;
-    }
-    let value = model[prop];
-    Object.defineProperty(model, prop, {
-      get() {
-        return value;
-      },
-      set: (val) => {
-        if (value !== val) {
-          value = val;
-          update(model);
-        }
-      },
-      configurable: false,
-    });
-  });
-}
-function update(model: any) {
-  model.__$mounts.forEach((item) => {
-    const props = getProps(model, item.props);
-    item.changeProps.forEach((func) => func(props));
-  });
-}
-function getProps(model: any, props: { [key: string]: string }) {
-  const _props = {};
-  let res = _getProps(model, Object.values(props));
-  Object.keys(props).forEach((name) => {
-    _props[name] = res[props[name]];
-  });
-  return _props;
-}
-function _getProps(model: any, props: string[]) {
-  const _props = {};
-  props.forEach((p) => {
-    _props[p] = model[p];
-  });
-  return _props;
-}
-function watch(v, path, cb) {
+const WatchKey = "__$watchExp";
+function watch(v, path, org) {
   if (path === "" || !v) return;
   let routers = path.split(".");
   let top = routers.shift();
   if (v && typeof v === "object") {
-    if (!v["__$" + top]) {
-      v["__$" + top] = [];
-    }
-    let cbs = v["__$" + top];
-    let leftPath = routers.join(".");
-    if (!cbs.find((item) => item.path === leftPath && item.fn === cb))
-      cbs.push({ path: leftPath, fn: cb });
     let prop = Object.getOwnPropertyDescriptor(v, top);
-    let value = v[top];
+    let oldVal = v[top];
+
+    if (!v[WatchKey]) {
+      Object.defineProperty(v, WatchKey, {
+        value: {},
+        enumerable: false,
+        configurable: false,
+      });
+    }
+    if (!v[WatchKey][top]) {
+      v[WatchKey][top] = [];
+    }
+    let watches = v[WatchKey][top];
+    let other = routers.join(".");
+    if (other && watches.indexOf(other) === -1) {
+      watches.push(other);
+    }
     if (!prop || prop.configurable) {
       Object.defineProperty(v, top, {
         configurable: false,
         get() {
-          return value;
+          return oldVal;
         },
-        set: (val) => {
-          if (val !== value) {
-            cbs.forEach((item) => {
-              if (item.path === "") item.fn(value, val);
-              else {
-                let old = evalExp(value, item.path);
-                let newval = evalExp(val, item.path);
-                if (old !== newval) {
-                  item.fn(old, newval);
-                }
-              }
-            });
-            value = val;
-            cbs.forEach((item) => {
-              watch(value, item.path, item.fn);
-            });
+        set: (newVal) => {
+          if (newVal !== oldVal) {
+            oldVal = newVal;
+            if (org && org[DynamicKey]) {
+              org[DynamicKey].forEach((cb) => cb());
+            }
+            if (v && v[ProxyKey]) {
+              v[ProxyKey].forEach((cb) => cb());
+            }
+            if (newVal) {
+              watches.forEach((exp) => {
+                watch(newVal, exp, org);
+              });
+            }
           }
         },
       });
     }
-    watch(value, leftPath, cb);
+    if (routers.length > 0) watch(oldVal, routers.join("."), org);
   }
 }
 function evalExp(v, expr) {

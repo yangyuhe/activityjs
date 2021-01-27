@@ -6,14 +6,19 @@ class Model {
   constructor(id) {
     this.id = id;
     this.age = 0;
-    if (id === "init" || id === "second")
-      this.submodel = new Model(this.id === "init" ? "second" : "third");
+    this.person = { name: "hexiang" };
+    if (id === "init") this.submodel = new Model("second");
   }
+  setName = () => {
+    this.person = { name: "lix" };
+  };
 
   add = () => {
     this.age++;
     if (this.age % 5 === 0) {
-      this.submodel = new Model(this.id === "init" ? "second" : "third");
+      if (!this.submodel)
+        this.submodel = new Model(this.id === "init" ? "second" : "third");
+      else this.submodel = null;
     }
   };
 }
@@ -28,6 +33,7 @@ const FirstLevelCounter = connect(
       myage: "age",
       myadd: "add",
     },
+    "submodel",
   ],
   Counter
 );
@@ -37,6 +43,10 @@ const SecondLevelCounter = connect(
     {
       myage: "age",
       myadd: "add",
+      sonid: "submodel.id",
+      id: "id",
+      changename: "setName",
+      name: "person.name",
     },
   ],
   Counter
@@ -71,12 +81,16 @@ function Counter(props) {
       console.log("id:", props.id, " destroy");
     };
   }, []);
+  console.log("render...");
   return (
     <>
+      {props.sonid ? <h1>sonid:{props.sonid}</h1> : null}
       {props.title ? <h1>{props.title}</h1> : null}
       <h1>{props.myage}</h1>
       {props.count ? <h2>{props.count}</h2> : null}
       <button onClick={props.myadd}>add</button>
+      <button onClick={props.changename}>change name</button>
+      <h3>{props.name}</h3>
     </>
   );
 }
@@ -95,6 +109,10 @@ class Model2 {
     this.timmer = setInterval(() => {
       this.time = new Date().toISOString();
     }, 1000);
+    this.person = { name: "小毛" };
+  }
+  setName(str) {
+    this.person = { name: str };
   }
 }
 let model2 = new Model2();
@@ -106,14 +124,22 @@ function Clock(props) {
       <h2>
         secondModel:{props.secondModel},id:{props.id}
       </h2>
+      <h2>person name:{props.name}</h2>
+      <button
+        onClick={() => {
+          model2.setName("三毛");
+        }}
+      >
+        change name
+      </button>
     </div>
   );
 }
 const WrapClock = connectMulti(
   [
-    [model1, { american: "time" }],
-    [model2, { china: "time" }],
     [[model, "submodel.submodel"], { secondModel: "age" }, "id"],
+    [model1, { american: "time" }],
+    [model2, { china: "time", name: "person.name" }],
   ],
   Clock
 );
