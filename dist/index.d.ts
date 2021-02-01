@@ -4,6 +4,7 @@
  * @param Com 组件
  */
 export declare function connectMulti(modelUses: any[], Com: any): any;
+export declare function connect(modelUse: any[], Com: any): any;
 /**
  *
  * @param modelUse
@@ -16,4 +17,4 @@ export declare function connectMulti(modelUses: any[], Com: any): any;
  * 4.使用model A里的model B的foo属性,[[A,"B"],"foo"]
  * @param Com 组件
  */
-export declare function connect(modelUse: any[], Com: any): any;
+export declare function realConnect(modelUse: any[], Com: any): any;

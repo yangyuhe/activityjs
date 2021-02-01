@@ -100,13 +100,14 @@ return /******/ (function(modules) { // webpackBootstrap
 /*!***********************!*\
   !*** ./src/index.tsx ***!
   \***********************/
-/*! exports provided: connectMulti, connect */
+/*! exports provided: connectMulti, connect, realConnect */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "connectMulti", function() { return connectMulti; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "connect", function() { return connect; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "realConnect", function() { return realConnect; });
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "react");
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
@@ -167,6 +168,26 @@ function connectMulti(modelUses, Com) {
   });
   return newCom;
 }
+function connect(modelUse, Com) {
+  if (!Array.isArray(modelUse[0])) {
+    var props = format(modelUse[0], modelUse.slice(1))[1];
+    Object.keys(props).forEach(function (name) {
+      var exp = props[name];
+      exp = exp.split(".")[0];
+      watch(modelUse[0], exp, modelUse[0]);
+    });
+  } else {
+    var prefix = modelUse[0][1];
+    var _props2 = format(modelUse[0][0], modelUse.slice(1))[1];
+    Object.keys(_props2).forEach(function (name) {
+      var exp = _props2[name];
+      exp = exp.split(".")[0];
+      watch(modelUse[0][0], prefix + "." + exp, modelUse[0][0]);
+    });
+  }
+
+  return realConnect(modelUse, Com);
+}
 /**
  *
  * @param modelUse
@@ -180,7 +201,7 @@ function connectMulti(modelUses, Com) {
  * @param Com 组件
  */
 
-function connect(modelUse, Com) {
+function realConnect(modelUse, Com) {
   if (!modelUse || !Array.isArray(modelUse) || modelUse.length < 2) throw new Error("connect:modelUse must be array with more than 1 element");
 
   if (!(modelUse[0] instanceof Object)) {
@@ -197,23 +218,45 @@ function connect(modelUse, Com) {
         model = _format2[0],
         props = _format2[1];
 
-    var item = {
-      component: Com,
-      props: props,
-      changeProps: []
-    };
+    var setStateFns = [];
+    var des = Object.getOwnPropertyDescriptor(model, ProxyKey);
 
-    if (!model.__$mounts) {
-      Object.defineProperty(model, "__$mounts", {
-        enumerable: false,
+    if (!des) {
+      Object.defineProperty(model, ProxyKey, {
         value: [],
-        configurable: false
+        configurable: false,
+        enumerable: false
       });
     }
 
-    var mounts = model.__$mounts;
-    mounts.push(item);
-    proxyProps(model, Object.values(props));
+    if (model[ProxyKey]) {
+      var oldState = {};
+      Object.keys(props).forEach(function (name) {
+        var exp = props[name];
+        var old = evalExp(model, exp);
+        oldState[name] = old;
+      });
+      model[ProxyKey].push(function () {
+        var newState = {};
+        Object.keys(props).forEach(function (name) {
+          var exp = props[name];
+          var newV = evalExp(model, exp);
+
+          if (newV !== oldState[name]) {
+            newState[name] = newV;
+          }
+        });
+
+        if (Object.keys(newState).length > 0) {
+          setStateFns.forEach(function (fn) {
+            fn(newState);
+          });
+        }
+
+        Object.assign(oldState, newState);
+      });
+    }
+
     return /*#__PURE__*/function (_React$PureComponent) {
       _inherits(Activity, _React$PureComponent);
 
@@ -226,12 +269,13 @@ function connect(modelUse, Com) {
 
         _this = _super.call(this, p);
         _this._setstate = null;
-
-        var _props = getProps(model, props);
-
+        var _props = {};
+        Object.keys(props).forEach(function (key) {
+          _props[key] = evalExp(model, props[key]);
+        });
         _this.state = _props;
         _this._setstate = _this.setState.bind(_assertThisInitialized(_this));
-        item.changeProps.push(_this._setstate);
+        setStateFns.push(_this._setstate);
         return _this;
       }
 
@@ -240,7 +284,7 @@ function connect(modelUse, Com) {
         value: function componentWillUnmount() {
           var _this2 = this;
 
-          item.changeProps = item.changeProps.filter(function (item) {
+          setStateFns = setStateFns.filter(function (item) {
             return item !== _this2._setstate;
           });
         }
@@ -257,12 +301,13 @@ function connect(modelUse, Com) {
     return connectDynamic(modelUse, Com);
   }
 }
+var DynamicKey = "__$lego_dynamic";
 
 function connectDynamic(modelUse, Com) {
   var path = modelUse[0][1];
 
   if (!path) {
-    return connect([modelUse[0][0]].concat(_toConsumableArray(modelUse.slice(1))), Com);
+    return realConnect([modelUse[0][0]].concat(_toConsumableArray(modelUse.slice(1))), Com);
   }
 
   var _format3 = format(modelUse[0][0], modelUse.slice(1)),
@@ -271,21 +316,42 @@ function connectDynamic(modelUse, Com) {
       props = _format4[1];
 
   var instances = [];
-  watch(model, path, function (oldVal, newVal) {
-    if (newVal) {
-      instances.forEach(function (item) {
-        item.setState({
-          Com: connect([newVal, props], Com)
-        });
-      });
-    } else {
-      instances.forEach(function (item) {
-        item.setState({
-          Com: null
-        });
+
+  if (model && _typeof(model) === "object") {
+    var des = Object.getOwnPropertyDescriptor(model, DynamicKey);
+
+    if (!des) {
+      Object.defineProperty(model, DynamicKey, {
+        value: [],
+        configurable: false,
+        enumerable: false
       });
     }
-  });
+
+    var callbacks = model[DynamicKey];
+    var old = evalExp(model, path);
+    callbacks.push(function () {
+      var newval = evalExp(model, path);
+
+      if (old !== newval) {
+        if (newval) {
+          instances.forEach(function (item) {
+            item.setState({
+              Com: realConnect([newval, props], Com)
+            });
+          });
+        } else {
+          instances.forEach(function (item) {
+            item.setState({
+              Com: null
+            });
+          });
+        }
+
+        old = newval;
+      }
+    });
+  }
 
   var Wrapper = /*#__PURE__*/function (_React$PureComponent2) {
     _inherits(Wrapper, _React$PureComponent2);
@@ -300,7 +366,7 @@ function connectDynamic(modelUse, Com) {
       _this3 = _super2.call(this, _props);
       var activity = evalExp(model, path);
       _this3.state = {
-        Com: activity ? connect([activity, props], Com) : null
+        Com: activity ? realConnect([activity, props], Com) : null
       };
       return _this3;
     }
@@ -378,107 +444,70 @@ function format(model, props) {
   return [model, newProps];
 }
 
-function proxyProps(model, props) {
-  props.forEach(function (prop) {
-    var descriptor = Object.getOwnPropertyDescriptor(model, prop);
+var ProxyKey = "__$lego_proxyProps";
+var WatchKey = "__$watchExp";
 
-    if (!model.hasOwnProperty(prop) || descriptor && !descriptor.configurable) {
-      return;
-    }
-
-    var value = model[prop];
-    Object.defineProperty(model, prop, {
-      get: function get() {
-        return value;
-      },
-      set: function set(val) {
-        if (value !== val) {
-          value = val;
-          update(model);
-        }
-      },
-      configurable: false
-    });
-  });
-}
-
-function update(model) {
-  model.__$mounts.forEach(function (item) {
-    var props = getProps(model, item.props);
-    item.changeProps.forEach(function (func) {
-      return func(props);
-    });
-  });
-}
-
-function getProps(model, props) {
-  var _props = {};
-
-  var res = _getProps(model, Object.values(props));
-
-  Object.keys(props).forEach(function (name) {
-    _props[name] = res[props[name]];
-  });
-  return _props;
-}
-
-function _getProps(model, props) {
-  var _props = {};
-  props.forEach(function (p) {
-    _props[p] = model[p];
-  });
-  return _props;
-}
-
-function watch(v, path, cb) {
+function watch(v, path, org) {
   if (path === "" || !v) return;
   var routers = path.split(".");
   var top = routers.shift();
 
   if (v && _typeof(v) === "object") {
-    if (!v["__$" + top]) {
-      v["__$" + top] = [];
+    var prop = Object.getOwnPropertyDescriptor(v, top);
+    var oldVal = v[top];
+
+    if (!v[WatchKey]) {
+      Object.defineProperty(v, WatchKey, {
+        value: {},
+        enumerable: false,
+        configurable: false
+      });
     }
 
-    var cbs = v["__$" + top];
-    var leftPath = routers.join(".");
-    if (!cbs.find(function (item) {
-      return item.path === leftPath && item.fn === cb;
-    })) cbs.push({
-      path: leftPath,
-      fn: cb
-    });
-    var prop = Object.getOwnPropertyDescriptor(v, top);
-    var value = v[top];
+    if (!v[WatchKey][top]) {
+      v[WatchKey][top] = [];
+    }
+
+    var watches = v[WatchKey][top];
+    var other = routers.join(".");
+
+    if (other && watches.indexOf(other) === -1) {
+      watches.push(other);
+    }
 
     if (!prop || prop.configurable) {
       Object.defineProperty(v, top, {
         configurable: false,
         get: function get() {
-          return value;
+          return oldVal;
         },
-        set: function set(val) {
-          if (val !== value) {
-            cbs.forEach(function (item) {
-              if (item.path === "") item.fn(value, val);else {
-                var old = evalExp(value, item.path);
-                var newval = evalExp(val, item.path);
+        set: function set(newVal) {
+          if (newVal !== oldVal) {
+            oldVal = newVal;
 
-                if (old !== newval) {
-                  item.fn(old, newval);
-                }
-              }
-            });
-            value = val;
-            cbs.forEach(function (item) {
-              watch(value, item.path, item.fn);
-            });
+            if (org && org[DynamicKey]) {
+              org[DynamicKey].forEach(function (cb) {
+                return cb();
+              });
+            }
+
+            if (v && v[ProxyKey]) {
+              v[ProxyKey].forEach(function (cb) {
+                return cb();
+              });
+            }
+
+            if (newVal) {
+              watches.forEach(function (exp) {
+                watch(newVal, exp, org);
+              });
+            }
           }
         }
       });
     }
 
-    watch(value, leftPath, cb);
+    if (routers.length > 0) watch(oldVal, routers.join("."), org);
   }
 }
 
