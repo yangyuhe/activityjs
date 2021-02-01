@@ -1,6 +1,6 @@
 {
   "name": "activityjs",
-  "version": "1.0.3",
+  "version": "2.0.0",
   "description": "一种相比于redux更简单的状态管理方式",
   "main": "dist/index.min.js",
   "types": "dist/index.d.ts",
