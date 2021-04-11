@@ -1,13 +1,14 @@
 /* eslint-disable react/prop-types */
 import React, { useEffect, useState } from "react";
-import { connect, connectMulti } from "../src/index";
+import { connect, watch } from "../src/index";
 import ReactDom from "react-dom";
 class Model {
   constructor(id) {
     this.id = id;
     this.age = 0;
     this.person = { name: "hexiang" };
-    if (id === "init") this.submodel = new Model("second");
+    this.submodel = null;
+    if (id === "init") this.submodel = watch(new Model("second"));
   }
   setName = () => {
     this.person = { name: "lix" };
@@ -17,60 +18,46 @@ class Model {
     this.age++;
     if (this.age % 5 === 0) {
       if (!this.submodel)
-        this.submodel = new Model(this.id === "init" ? "second" : "third");
+        this.submodel = watch(
+          new Model(this.id === "init" ? "second" : "third")
+        );
       else this.submodel = null;
     }
   };
 }
 
-const model = new Model("init");
+const model = watch(new Model("init"));
 
 window.__model = model;
 const FirstLevelCounter = connect(
-  [
-    model,
-    {
-      myage: "age",
-      myadd: "add",
-    },
-    "submodel",
-  ],
+  {
+    visible: true,
+    myage: () => model.age,
+    myadd: () => model.add,
+    name: () => model.person.name,
+    changename: () => model.setName,
+  },
   Counter
 );
 const SecondLevelCounter = connect(
-  [
-    [model, "submodel"],
-    {
-      myage: "age",
-      myadd: "add",
-      sonid: "submodel.id",
-      id: "id",
-      changename: "setName",
-      name: "person.name",
-    },
-  ],
+  {
+    visible: () => !!model.submodel,
+    myage: () => model.submodel.age,
+    myadd: () => model.submodel.add,
+    sonid: () => model.submodel.submodel && model.submodel.submodel.id,
+    id: () => model.submodel.id,
+    changename: () => model.submodel.setName,
+    name: () => model.submodel.person.name,
+  },
   Counter
 );
 const ThirdLevelCounter = connect(
-  [
-    [model, "submodel.submodel"],
-    {
-      myage: "age",
-      myadd: "add",
-      id: "id",
-    },
-  ],
-  Counter
-);
-const FourLevelCounter = connect(
-  [
-    [model, "submodel.submodel"],
-    {
-      myage: "age",
-      myadd: "add",
-      id: "id",
-    },
-  ],
+  {
+    visible: () => !!model.submodel.submodel,
+    myage: () => model.submodel.submodel.age,
+    myadd: () => model.submodel.submodel.add,
+    id: () => model.submodel.submodel.id,
+  },
   Counter
 );
 
@@ -82,41 +69,48 @@ function Counter(props) {
     };
   }, []);
   console.log("render...");
-  return (
-    <>
-      {props.sonid ? <h1>sonid:{props.sonid}</h1> : null}
-      {props.title ? <h1>{props.title}</h1> : null}
-      <h1>{props.myage}</h1>
-      {props.count ? <h2>{props.count}</h2> : null}
-      <button onClick={props.myadd}>add</button>
-      <button onClick={props.changename}>change name</button>
-      <h3>{props.name}</h3>
-    </>
-  );
+  if (props.visible)
+    return (
+      <>
+        {props.sonid ? <h1>sonid:{props.sonid}</h1> : null}
+        {props.title ? <h1>{props.title}</h1> : null}
+        <h1>{props.myage}</h1>
+        {props.count ? <h2>{props.count}</h2> : null}
+        <button onClick={props.myadd}>add</button>
+        <button onClick={props.changename}>change name</button>
+        <h3>{props.name}</h3>
+      </>
+    );
+  return null;
 }
 class Model1 {
   constructor() {
     this.time = new Date().toLocaleString();
-    this.timmer = setInterval(() => {
-      this.time = new Date().toLocaleString();
-    }, 1000);
+    // this.timmer = setInterval(() => {
+    //   this.time = new Date().toLocaleString();
+    // }, 1000);
   }
 }
-let model1 = new Model1();
+let model1 = watch(new Model1());
 class Model2 {
   constructor() {
     this.time = new Date().toISOString();
-    this.timmer = setInterval(() => {
-      this.time = new Date().toISOString();
-    }, 1000);
+    // this.timmer = setInterval(() => {
+    //   this.time = new Date().toISOString();
+    // }, 1000);
     this.person = { name: "小毛" };
+    this.foo = "foo";
   }
   setName(str) {
-    this.person = { name: str };
+    setTimeout(() => {
+      this.foo = "bar";
+      this.person = { name: str };
+    }, 0);
   }
 }
-let model2 = new Model2();
+let model2 = watch(new Model2());
 function Clock(props) {
+  console.log("render clock", props);
   return (
     <div>
       <h1>美国:{props.american}</h1>
@@ -135,12 +129,15 @@ function Clock(props) {
     </div>
   );
 }
-const WrapClock = connectMulti(
-  [
-    [[model, "submodel.submodel"], { secondModel: "age" }, "id"],
-    [model1, { american: "time" }],
-    [model2, { china: "time", name: "person.name" }],
-  ],
+const WrapClock = connect(
+  {
+    secondModel: () => model.submodel.submodel.age,
+    id: () => model.submodel.submodel.id,
+    american: () => model1.time,
+    china: () => model2.time,
+    name: () => model2.person.name,
+    foo: () => model2.foo,
+  },
   Clock
 );
 
@@ -152,7 +149,7 @@ function App() {
   return (
     <>
       <h1>测试动态绑定</h1>
-      <FirstLevelCounter />
+      <FirstLevelCounter title="init" />
       <SecondLevelCounter title="second" />
       <ThirdLevelCounter count={count} title="third" />
       <ThirdLevelCounter count={count} title="fourth" />

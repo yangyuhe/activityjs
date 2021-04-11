@@ -100,25 +100,22 @@ return /******/ (function(modules) { // webpackBootstrap
 /*!***********************!*\
   !*** ./src/index.tsx ***!
   \***********************/
-/*! exports provided: connectMulti, connect, realConnect */
+/*! exports provided: connect, watch */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "connectMulti", function() { return connectMulti; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "connect", function() { return connect; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "realConnect", function() { return realConnect; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "watch", function() { return watch; });
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "react");
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
-function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
-function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
-function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter); }
-
-function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 function _extends() { _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
 
@@ -138,388 +135,230 @@ function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) ===
 
 function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
 
-function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Date.prototype.toString.call(Reflect.construct(Date, [], function () {})); return true; } catch (e) { return false; } }
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
 
 function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
 
-function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
 
-function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-
-function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
-
-function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-
-function _iterableToArrayLimit(arr, i) { if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return; var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
-
-function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
-
-
-/**
- * 连接多个model
- * @param models 是connect方法的第一个参数的数组
- * @param Com 组件
- */
-
-function connectMulti(modelUses, Com) {
-  var newCom = Com;
-  modelUses.forEach(function (modelUse) {
-    newCom = connect(modelUse, newCom);
+function connect(propertyMap, Com) {
+  var callbacks = [];
+  notify(propertyMap, function (values) {
+    callbacks.forEach(function (cb) {
+      return cb(values);
+    });
   });
-  return newCom;
-}
-function connect(modelUse, Com) {
-  if (!Array.isArray(modelUse[0])) {
-    var props = format(modelUse[0], modelUse.slice(1))[1];
-    Object.keys(props).forEach(function (name) {
-      var exp = props[name];
-      exp = exp.split(".")[0];
-      watch(modelUse[0], exp, modelUse[0]);
-    });
-  } else {
-    var prefix = modelUse[0][1];
-    var _props2 = format(modelUse[0][0], modelUse.slice(1))[1];
-    Object.keys(_props2).forEach(function (name) {
-      var exp = _props2[name];
-      exp = exp.split(".")[0];
-      watch(modelUse[0][0], prefix + "." + exp, modelUse[0][0]);
-    });
-  }
+  return /*#__PURE__*/function (_React$PureComponent) {
+    _inherits(Activity, _React$PureComponent);
 
-  return realConnect(modelUse, Com);
-}
-/**
- *
- * @param modelUse
- * 1.使用model A的foo属性，[A,'foo'];
- *
- * 2.使用model A的foo属性作为自己的bar属性，[A,{bar:'foo'}];
- *
- * 3.使用model A的foo属性和bar属性, [A, 'foo','bar'];
- *
- * 4.使用model A里的model B的foo属性,[[A,"B"],"foo"]
- * @param Com 组件
- */
+    var _super = _createSuper(Activity);
 
-function realConnect(modelUse, Com) {
-  if (!modelUse || !Array.isArray(modelUse) || modelUse.length < 2) throw new Error("connect:modelUse must be array with more than 1 element");
+    function Activity(p) {
+      var _this;
 
-  if (!(modelUse[0] instanceof Object)) {
-    throw new Error("connect:model must be an object or array");
-  }
+      _classCallCheck(this, Activity);
 
-  if (Array.isArray(modelUse[0]) && modelUse[0].length !== 2) {
-    throw new Error("connect:model array length must be 2");
-  }
-
-  if (!Array.isArray(modelUse[0])) {
-    var _format = format(modelUse[0], modelUse.slice(1)),
-        _format2 = _slicedToArray(_format, 2),
-        model = _format2[0],
-        props = _format2[1];
-
-    var setStateFns = [];
-    var des = Object.getOwnPropertyDescriptor(model, ProxyKey);
-
-    if (!des) {
-      Object.defineProperty(model, ProxyKey, {
-        value: [],
-        configurable: false,
-        enumerable: false
+      _this = _super.call(this, p);
+      var props = {};
+      Object.keys(propertyMap).forEach(function (key) {
+        props[key] = evalFn(propertyMap[key]);
       });
-    }
-
-    if (model[ProxyKey]) {
-      var oldState = {};
-      Object.keys(props).forEach(function (name) {
-        var exp = props[name];
-        var old = evalExp(model, exp);
-        oldState[name] = old;
+      _this.state = props;
+      var queue = new EventQueue(function (states) {
+        _this.setState(states);
       });
-      model[ProxyKey].push(function () {
-        var newState = {};
-        Object.keys(props).forEach(function (name) {
-          var exp = props[name];
-          var newV = evalExp(model, exp);
 
-          if (newV !== oldState[name]) {
-            newState[name] = newV;
-          }
-        });
-
-        if (Object.keys(newState).length > 0) {
-          setStateFns.forEach(function (fn) {
-            fn(newState);
-          });
-        }
-
-        Object.assign(oldState, newState);
-      });
-    }
-
-    return /*#__PURE__*/function (_React$PureComponent) {
-      _inherits(Activity, _React$PureComponent);
-
-      var _super = _createSuper(Activity);
-
-      function Activity(p) {
-        var _this;
-
-        _classCallCheck(this, Activity);
-
-        _this = _super.call(this, p);
-        _this._setstate = null;
-        var _props = {};
-        Object.keys(props).forEach(function (key) {
-          _props[key] = evalExp(model, props[key]);
-        });
-        _this.state = _props;
-        _this._setstate = _this.setState.bind(_assertThisInitialized(_this));
-        setStateFns.push(_this._setstate);
-        return _this;
-      }
-
-      _createClass(Activity, [{
-        key: "componentWillUnmount",
-        value: function componentWillUnmount() {
-          var _this2 = this;
-
-          setStateFns = setStateFns.filter(function (item) {
-            return item !== _this2._setstate;
-          });
-        }
-      }, {
-        key: "render",
-        value: function render() {
-          return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(Com, _extends({}, this.state, this.props));
-        }
-      }]);
-
-      return Activity;
-    }(react__WEBPACK_IMPORTED_MODULE_0___default.a.PureComponent);
-  } else {
-    return connectDynamic(modelUse, Com);
-  }
-}
-var DynamicKey = "__$lego_dynamic";
-
-function connectDynamic(modelUse, Com) {
-  var path = modelUse[0][1];
-
-  if (!path) {
-    return realConnect([modelUse[0][0]].concat(_toConsumableArray(modelUse.slice(1))), Com);
-  }
-
-  var _format3 = format(modelUse[0][0], modelUse.slice(1)),
-      _format4 = _slicedToArray(_format3, 2),
-      model = _format4[0],
-      props = _format4[1];
-
-  var instances = [];
-
-  if (model && _typeof(model) === "object") {
-    var des = Object.getOwnPropertyDescriptor(model, DynamicKey);
-
-    if (!des) {
-      Object.defineProperty(model, DynamicKey, {
-        value: [],
-        configurable: false,
-        enumerable: false
-      });
-    }
-
-    var callbacks = model[DynamicKey];
-    var old = evalExp(model, path);
-    callbacks.push(function () {
-      var newval = evalExp(model, path);
-
-      if (old !== newval) {
-        if (newval) {
-          instances.forEach(function (item) {
-            item.setState({
-              Com: realConnect([newval, props], Com)
-            });
-          });
-        } else {
-          instances.forEach(function (item) {
-            item.setState({
-              Com: null
-            });
-          });
-        }
-
-        old = newval;
-      }
-    });
-  }
-
-  var Wrapper = /*#__PURE__*/function (_React$PureComponent2) {
-    _inherits(Wrapper, _React$PureComponent2);
-
-    var _super2 = _createSuper(Wrapper);
-
-    function Wrapper(_props) {
-      var _this3;
-
-      _classCallCheck(this, Wrapper);
-
-      _this3 = _super2.call(this, _props);
-      var activity = evalExp(model, path);
-      _this3.state = {
-        Com: activity ? realConnect([activity, props], Com) : null
+      _this._setState = function (state) {
+        queue.enter(state);
       };
-      return _this3;
+
+      callbacks.push(_this._setState);
+      return _this;
     }
 
-    _createClass(Wrapper, [{
-      key: "componentDidMount",
-      value: function componentDidMount() {
-        instances.push(this);
-      }
-    }, {
+    _createClass(Activity, [{
       key: "componentWillUnmount",
       value: function componentWillUnmount() {
-        var _this4 = this;
+        var _this2 = this;
 
-        instances = instances.filter(function (item) {
-          return item !== _this4;
+        callbacks = callbacks.filter(function (item) {
+          return item !== _this2._setState;
         });
       }
     }, {
       key: "render",
       value: function render() {
-        if (this.state.Com) {
-          var _Com = this.state.Com;
-          return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_Com, this.props);
-        }
-
-        return null;
+        return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(Com, _extends({}, this.state, this.props));
       }
     }]);
 
-    return Wrapper;
+    return Activity;
   }(react__WEBPACK_IMPORTED_MODULE_0___default.a.PureComponent);
-
-  return Wrapper;
 }
-
-function format(model, props) {
-  if (!(model instanceof Object)) {
-    throw new Error("connect:model must be an no null object");
+function watch(model) {
+  if (watchedModels.includes(model)) {
+    return model;
   }
 
-  var oldProps = props;
-  var newProps = {};
+  watchedModels.push(model);
+  Object.keys(model).forEach(function (key) {
+    var des = Object.getOwnPropertyDescriptor(model, key);
 
-  function keys(prop) {
-    if (prop instanceof Object && Object.keys(prop).length > 0) {
-      Object.keys(prop).forEach(function (key) {
-        if (key && prop[key] && typeof key === "string" && typeof prop[key] === "string") newProps[key] = prop[key];else throw new Error("connect:MapProperty format error");
-      });
-      return true;
-    }
+    if (des.configurable) {
+      var value = model[key];
+      Object.defineProperty(model, key, {
+        get: function get() {
+          if (curContext) {
+            var _curContext = curContext,
+                watching = _curContext.watching,
+                curKey = _curContext.curKey,
+                watchedMap = _curContext.watchedMap,
+                propertyMap = _curContext.propertyMap;
 
-    return false;
-  }
+            if (watching && curKey) {
+              var res = watchedMap.find(function (item) {
+                return item.model === model && item.key === key;
+              });
 
-  if (oldProps instanceof Array) {
-    oldProps.forEach(function (prop) {
-      if (typeof prop === "string") {
-        newProps[prop] = prop;
-        return;
-      }
+              if (!res) {
+                res = {
+                  model: model,
+                  key: key,
+                  fns: {}
+                };
+                watchedMap.push(res);
+              }
 
-      if (keys(prop)) {
-        return;
-      }
+              res.fns[curKey] = propertyMap[curKey];
+            }
+          }
 
-      throw new Error("connect:MapProperty format error");
-    });
-  } else {
-    if (!keys(oldProps)) {
-      throw new Error("connect:MapProperty format error");
-    }
-  }
+          return value;
+        },
+        set: function set(val) {
+          if (val !== value) {
+            value = val;
+            contexts.forEach(function (context) {
+              var watchedMap = context.watchedMap;
+              watchedMap.forEach(function (item) {
+                if (item.model === model && item.key === key) {
+                  var _values = {};
+                  var fns = item.fns;
 
-  return [model, newProps];
-}
+                  if (Object.keys(fns).length > 0) {
+                    item.fns = {};
+                    context.watching = true;
+                    var oldContext = curContext;
+                    curContext = context;
+                    Object.keys(fns).forEach(function (key) {
+                      context.curKey = key;
+                      var value;
 
-var ProxyKey = "__$lego_proxyProps";
-var WatchKey = "__$watchExp";
+                      try {
+                        value = evalFn(fns[key]);
+                      } catch (err) {
+                        value = null;
+                      }
 
-function watch(v, path, org) {
-  if (path === "" || !v) return;
-  var routers = path.split(".");
-  var top = routers.shift();
-
-  if (v && _typeof(v) === "object") {
-    var prop = Object.getOwnPropertyDescriptor(v, top);
-    var oldVal = v[top];
-
-    if (!v[WatchKey]) {
-      Object.defineProperty(v, WatchKey, {
-        value: {},
-        enumerable: false,
+                      if (context.oldValues && context.oldValues[key] !== value) {
+                        _values[key] = value;
+                        context.oldValues[key] = value;
+                      }
+                    });
+                    curContext = oldContext;
+                    context.watching = false;
+                    if (Object.keys(_values).length > 0) context.callback(_values);
+                  }
+                }
+              });
+            });
+          }
+        },
         configurable: false
       });
     }
+  });
+  return model;
+}
+var contexts = [];
+var curContext = null;
+var watchedModels = [];
 
-    if (!v[WatchKey][top]) {
-      v[WatchKey][top] = [];
+function notify(propertyMap, callback) {
+  var context = {
+    propertyMap: propertyMap,
+    callback: callback,
+    watching: false,
+    curKey: "",
+    watchedMap: [],
+    oldValues: {}
+  };
+  contexts.push(context);
+  watchingContext(context);
+}
+
+function watchingContext(context) {
+  context.watching = true;
+  var props = {};
+  var oldContext = curContext;
+  curContext = context;
+  Object.keys(context.propertyMap).forEach(function (key) {
+    context.curKey = key;
+    props[key] = evalFn(context.propertyMap[key]);
+  });
+  curContext = oldContext;
+  context.oldValues = _objectSpread({}, props);
+  context.watching = false;
+  context.callback(props);
+}
+
+function evalFn(fn) {
+  if (typeof fn === "function") {
+    try {
+      return fn();
+    } catch (err) {
+      return null;
     }
+  } else {
+    return fn;
+  }
+}
 
-    var watches = v[WatchKey][top];
-    var other = routers.join(".");
+var EventQueue = /*#__PURE__*/function () {
+  function EventQueue(callback) {
+    _classCallCheck(this, EventQueue);
 
-    if (other && watches.indexOf(other) === -1) {
-      watches.push(other);
+    this.queue = [];
+    this.callback = null;
+    this.callback = callback;
+  }
+
+  _createClass(EventQueue, [{
+    key: "enter",
+    value: function enter(state) {
+      var _this3 = this;
+
+      if (this.queue.length === 0) {
+        Promise.resolve().then(function () {
+          _this3.consume();
+        });
+      }
+
+      this.queue.push(state);
     }
-
-    if (!prop || prop.configurable) {
-      Object.defineProperty(v, top, {
-        configurable: false,
-        get: function get() {
-          return oldVal;
-        },
-        set: function set(newVal) {
-          if (newVal !== oldVal) {
-            oldVal = newVal;
-
-            if (org && org[DynamicKey]) {
-              org[DynamicKey].forEach(function (cb) {
-                return cb();
-              });
-            }
-
-            if (v && v[ProxyKey]) {
-              v[ProxyKey].forEach(function (cb) {
-                return cb();
-              });
-            }
-
-            if (newVal) {
-              watches.forEach(function (exp) {
-                watch(newVal, exp, org);
-              });
-            }
-          }
-        }
+  }, {
+    key: "consume",
+    value: function consume() {
+      var states = {};
+      this.queue.forEach(function (state) {
+        Object.assign(states, state);
       });
+      this.queue = [];
+      this.callback(states);
     }
+  }]);
 
-    if (routers.length > 0) watch(oldVal, routers.join("."), org);
-  }
-}
-
-function evalExp(v, expr) {
-  var f = new Function("obj", "return obj." + expr);
-
-  try {
-    return f(v);
-  } catch (err) {
-    return null;
-  }
-}
+  return EventQueue;
+}();
 
 /***/ }),
 
