@@ -23,7 +23,8 @@ export function connect(
         this.setState(states);
       });
       this._setState = (state) => {
-        queue.enter(state);
+        // queue.enter(state);
+        this.setState(state);
       };
       callbacks.push(this._setState);
     }
