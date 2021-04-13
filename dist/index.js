@@ -168,7 +168,8 @@ function connect(propertyMap, Com) {
       });
 
       _this._setState = function (state) {
-        queue.enter(state);
+        // queue.enter(state);
+        _this.setState(state);
       };
 
       callbacks.push(_this._setState);
