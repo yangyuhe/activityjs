@@ -1,3 +1,4 @@
+[**_codesandbox示例_**](https://codesandbox.io/s/activityjs-demo-counter-hnv50?file=/src/App.js)
 # 一种适用于 react 的新的状态管理方案
 
 #### activityjs 实现原理很简单，就是通过对 js 实例的属性进行代理从而监听属性的变化，并在变化之后通知到绑定的组件进行更新。
