@@ -100,16 +100,29 @@ return /******/ (function(modules) { // webpackBootstrap
 /*!***********************!*\
   !*** ./src/index.tsx ***!
   \***********************/
-/*! exports provided: connect, watch */
+/*! exports provided: connect, watch, useActivity */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "connect", function() { return connect; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "watch", function() { return watch; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "useActivity", function() { return useActivity; });
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "react");
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+function _iterableToArrayLimit(arr, i) { if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return; var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
 
@@ -140,13 +153,23 @@ function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Re
 function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
 
 
+/**
+ * 绑定model的值到组件
+ * @param propertyMap 通过{key:()=>any}的形式指定可响应式的属性, key是传递给组件的属性名，值是()=>any执行的结果，值也可以直接是一个非函数的任意值
+ * @param Com 被连接的组件
+ * @returns 返回新的组件
+ */
+
 function connect(propertyMap, Com) {
-  var callbacks = [];
+  //存储所有需要监听这些值变化的组件的setState方法
+  var callbacks = []; //监听propertyMap值的变化，当propertyMap中的某几项的值发生变化时会通知到回调
+
   notify(propertyMap, function (values) {
     callbacks.forEach(function (cb) {
       return cb(values);
     });
-  });
+  }); //这是实际订阅了model数据的组件
+
   return /*#__PURE__*/function (_React$PureComponent) {
     _inherits(Activity, _React$PureComponent);
 
@@ -163,14 +186,11 @@ function connect(propertyMap, Com) {
         props[key] = evalFn(propertyMap[key]);
       });
       _this.state = props;
-      var queue = new EventQueue(function (states) {
-        _this.setState(states);
-      });
 
       _this._setState = function (state) {
-        // queue.enter(state);
         _this.setState(state);
-      };
+      }; //当数据发生变化时通知组件设置新的state
+
 
       callbacks.push(_this._setState);
       return _this;
@@ -195,6 +215,8 @@ function connect(propertyMap, Com) {
     return Activity;
   }(react__WEBPACK_IMPORTED_MODULE_0___default.a.PureComponent);
 }
+/**通过代理实现对数据变换的监听 */
+
 function watch(model) {
   if (watchedModels.includes(model)) {
     return model;
@@ -208,6 +230,7 @@ function watch(model) {
       var value = model[key];
       Object.defineProperty(model, key, {
         get: function get() {
+          //搜集propertyMap中和当前key相关的值
           if (curContext) {
             var _curContext = curContext,
                 watching = _curContext.watching,
@@ -237,7 +260,8 @@ function watch(model) {
         },
         set: function set(val) {
           if (val !== value) {
-            value = val;
+            value = val; //当model的数据更新后重新计算propertyMap中受影响的值并通知到回调
+
             contexts.forEach(function (context) {
               var watchedMap = context.watchedMap;
               watchedMap.forEach(function (item) {
@@ -280,9 +304,20 @@ function watch(model) {
   });
   return model;
 }
+/**执行一次watch的上下文记录 */
+
+/**所有的watch的上下文 */
 var contexts = [];
 var curContext = null;
+/**activityjs正在监听的所有的model的集合 */
+
 var watchedModels = [];
+/**
+ * 监听这组{key:()=>any}的值，当model数据更新导致其中某几项更新事通知到callback
+ * @param propertyMap
+ * @param callback
+ * @returns
+ */
 
 function notify(propertyMap, callback) {
   var context = {
@@ -294,10 +329,15 @@ function notify(propertyMap, callback) {
     oldValues: {}
   };
   contexts.push(context);
-  watchingContext(context);
+  startWatch(context);
+  return function () {
+    contexts = contexts.filter(function (item) {
+      return item != context;
+    });
+  };
 }
 
-function watchingContext(context) {
+function startWatch(context) {
   context.watching = true;
   var props = {};
   var oldContext = curContext;
@@ -323,43 +363,36 @@ function evalFn(fn) {
     return fn;
   }
 }
+/**
+ * hook支持，fn的计算结果将作为值返回
+ * @param fn
+ * @returns fn的计算结果
+ */
 
-var EventQueue = /*#__PURE__*/function () {
-  function EventQueue(callback) {
-    _classCallCheck(this, EventQueue);
 
-    this.queue = [];
-    this.callback = null;
-    this.callback = callback;
-  }
+function useActivity(fn) {
+  var _useState = Object(react__WEBPACK_IMPORTED_MODULE_0__["useState"])(function () {
+    fn();
+  }),
+      _useState2 = _slicedToArray(_useState, 2),
+      state = _useState2[0],
+      setState = _useState2[1];
 
-  _createClass(EventQueue, [{
-    key: "enter",
-    value: function enter(state) {
-      var _this3 = this;
-
-      if (this.queue.length === 0) {
-        Promise.resolve().then(function () {
-          _this3.consume();
-        });
+  Object(react__WEBPACK_IMPORTED_MODULE_0__["useEffect"])(function () {
+    var unsub = notify({
+      val: function val() {
+        return fn();
       }
-
-      this.queue.push(state);
-    }
-  }, {
-    key: "consume",
-    value: function consume() {
-      var states = {};
-      this.queue.forEach(function (state) {
-        Object.assign(states, state);
+    }, function (_ref) {
+      var val = _ref.val;
+      setState(function () {
+        return val;
       });
-      this.queue = [];
-      this.callback(states);
-    }
-  }]);
-
-  return EventQueue;
-}();
+    });
+    return unsub;
+  }, []);
+  return state;
+}
 
 /***/ }),
 
