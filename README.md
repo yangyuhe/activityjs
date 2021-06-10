@@ -1,97 +1,68 @@
-[**_codesandbox示例_**](https://codesandbox.io/s/activityjs-demo-counter-hnv50?file=/src/App.js)
-# 一种适用于 react 的新的状态管理方案
+[**_codesandbox 示例_**](https://codesandbox.io/s/activityjs-demo-counter-forked-18ir9?file=/src/App.js)
+
+# 一种适用于 react 的新的状态管理方案，可以方便的将数据和组件进行绑定。
 
 #### activityjs 实现原理很简单，就是通过对 js 实例的属性进行代理从而监听属性的变化，并在变化之后通知到绑定的组件进行更新。
 
-#### activityjs 意在将任何 js 对象实例跟 react 组件进行绑定，并在实例属性被更新时通知到 react 组件更新。使用 activityjs，你的数据不会再像 redux 一样是一颗树，而是一个个分散的数据集合，这些数据集合或许存在联系和调用关系或许没有，无所谓。
+---
 
-#### 我们可以将应用逻辑抽离到对应的 js 类中，不用再跟组件耦合，组件要做的是从各个 js 实例中拿自己想要的数据来展示或者调用其暴露的方法。
+#### 下面是一个简单的加减计数的应用
+
+[**代码地址**](https://codesandbox.io/s/activityjs-demo-counter-forked-18ir9?file=/src/App.js)
 
 ```javascript
-import { connect, watch } from "activityjs";
-import React from "react";
-//创建业务代码
-let page = watch({
-  user: null,
-});
-function login() {
-  mockRequest().then(() => {
-    //关联的react组件会自动得到同步更新
-    page.user = { name: "foo" };
-  });
-}
-//组件
-function Login(props) {
+//App.js
+import "./styles.css";
+import { state, plus, abstract } from "./model";
+import { useActivity } from "activityjs";
+export default function App() {
+  const counter = useActivity(() => state.counter);
   return (
-    <>
-      {props.user ? (
-        <h1>{props.user.name}</h1>
-      ) : (
-        <button onClick={login}>login</button>
-      )}
-    </>
+    <div className="App">
+      <button onClick={abstract}>减</button>
+      <input value={counter} />
+      <button onClick={plus}>加</button>
+    </div>
   );
 }
-//将page的user,login属性/方法给组件Login
-let WLogin = connect({ user: () => page.user }, Login);
+//model.js
+import { watch } from "activityjs";
 
-ReactDom.reander(<WLogin />, document.getElementById("app"));
+export const state = watch({
+  counter: 0,
+});
+export function plus() {
+  state.counter++;
+}
+export function abstract() {
+  state.counter--;
+}
 ```
+
+---
 
 ### API
 
-1. watch<T>(model:T):T  
-   watch 接受一个普通的对象，这个对象是对页面数据的抽象，类似于 redux 中的 state,返回值依然是这个 model 对象。经过 watch 方法的修改后，model 对象将成为响应式的。
+1. watch<T>(state:T):T  
+   watch 接受一个普通的 js 对象，这个对象是对页面数据的抽象，类似于 react 中的 state，返回值依然是这个 state 对象。watch 方法会对 state 的第一层的属性进行代理。
 
 2. function connect(propertyMap: {
    [key: string]: (() => any)|any;
    }, Com: any): any;  
-   connect 包装组件 Com，propertyMap 将 model 的数据映射为新的属性供组件访问。propertyMap 是一个个键值对，键是属性名，值可以是任意值；当是函数的时候，会被执行并返回结果，如果函数中使用了被 watch 的 model 的中的属性，当 model 修改时该函数会被重新计算以实现属性的更新从而使组件重新 render。
+   connect 包装组件 Com，propertyMap 将 state 的数据映射为属性提供给组件。propertyMap 是一个个键值对，键是属性名，值通常是一个函数，也可以是一个非函数的值；当是函数的时候，会被执行并返回结果。
+3. useActivity(()=>any)  
+   对 react hook 的支持，参数是一个拥有任意返回值的函数
 
-### 最复杂的一个例子
+### Q&A
 
-```tsx
-import { watch, connect } from "activityjs";
+1. 为什么要代理 state 对象的属性？  
+   通过对属性的 get 和 set 方法进行代理，可以方便的知道这个属性什么时候被访问过，什么时候被修改过，并在修改时触发有关联的组件的状态更新
 
-let model1 = watch({
-  name: "model1",
-});
-let model2 = watch({
-  person: {
-    info: {
-      name: "model2",
-    },
-    address: "foo",
-  },
-});
-function changModel2Name(name) {
-  model2.person = { ...model2.person, info: { name } };
-}
-function Com(props) {
-  return (
-    <>
-      <h1>
-        {props.name1},{props.name2}
-      </h1>
-      <button onClick={changModel2Name}>change model2 name</button>
-    </>
-  );
-}
-//如果Com组件想获取model1中的name和model2中person下的info下的name
-const WrapCom = connect(
-  {
-    name1: () => model1.name,
-    name2: () => model2.person.info.name,
-  },
-  Com
-);
-```
+2. 为什么 [connect](#API) 方法或者 [useActivity](#API) 方法的参数通常是一个函数？  
+   当 state 的某个属性被修改后，通过运行这个函数得到一个新的值，从而触发组件的更新。
 
-```jsx
-//使用
-<WrapCom />
-```
+3. [connect](#API) 方法或者 [useActivity](#API) 方法传入的函数什么时候会被执行？会很频繁吗？  
+   当 state 属性被修改同时这个属性的修改有可能影响函数计算结果的时候，才会运行这个函数；不频繁
 
-### 注意
-
-如果想将 model 中一个方法提供给组件，注意该方法需要用 this 绑定或者使用 es6 中的箭头函数；多数情况下可能不用映射一个方法，而是直接调用 model 的这个方法。
+4. 如何修改 state?  
+   这里并不像 redux 那样需要定义专门的 action，直接对属性赋值就行。这就意味着如果你把 state 暴露出去，那么它有可能在任何位置被修改。最好的实践应该是像上面的[加减器](#下面是一个简单的加减计数的应用)的例子那样，把对于 state 的定义和操作放在一个文件内，然后暴露方法出去。
